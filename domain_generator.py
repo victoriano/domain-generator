@@ -9,8 +9,15 @@ import subprocess
 import re
 import json
 import os
-from typing import List, Set, Optional
+from typing import List, Set, Optional, Union
 import requests
+
+# Try to import python-dotenv for .env file support
+try:
+    from dotenv import load_dotenv
+    load_dotenv()  # Load .env file if it exists
+except ImportError:
+    pass
 
 class DomainGenerator:
     def __init__(self):
@@ -136,8 +143,8 @@ class DomainGenerator:
         except socket.gaierror:
             return True   # Domain might be available
     
-    def whois_check(self, domain: str) -> bool:
-        """Check domain availability using WHOIS. Returns True if available."""
+    def whois_check(self, domain: str) -> Optional[bool]:
+        """Check domain availability using WHOIS. Returns True if available, False if taken, None if unclear."""
         try:
             result = subprocess.run(
                 ['whois', f"{domain}.com"],
@@ -252,6 +259,11 @@ class DomainGenerator:
         openrouter_key = os.getenv('OPENROUTER_API_KEY')
         if not openrouter_key:
             print("⚠️  OPENROUTER_API_KEY environment variable not set")
+            print("💡 Setup instructions:")
+            print("   1. Get your API key from: https://openrouter.ai/keys")
+            print("   2. Set environment variable:")
+            print("      export OPENROUTER_API_KEY='your-api-key-here'")
+            print("   3. Or create a .env file with: OPENROUTER_API_KEY=your-api-key-here")
             return []
         
         prompt = f"""Generate {num_domains} creative domain name ideas for: {context}
@@ -280,12 +292,12 @@ analyticswave"""
                     "Content-Type": "application/json"
                 },
                 json={
-                    "model": "anthropic/claude-3-haiku",
+                    "model": "google/gemini-2.5-flash-preview",  # Confirmed working in test
                     "messages": [
                         {"role": "user", "content": prompt}
                     ],
                     "temperature": 0.8,
-                    "max_tokens": 500
+                    "max_tokens": 300
                 },
                 timeout=30
             )
@@ -305,8 +317,25 @@ analyticswave"""
                             domains.append(domain)
                 
                 return domains[:num_domains]
+            elif response.status_code == 402:
+                print("⚠️  OpenRouter API error: 402 (Payment Required)")
+                print("💡 This means your API key is valid but you need to add credits:")
+                print("   1. Go to: https://openrouter.ai/credits")
+                print("   2. Add credits to your account ($5-10 is plenty)")
+                print("   3. Try running the script again")
+                return []
+            elif response.status_code == 404:
+                print("⚠️  OpenRouter API error: 404 (Model Not Found)")
+                print("💡 The model name might be incorrect or unavailable. Current model:")
+                print(f"   google/gemini-2.5-flash-preview")
+                print("💡 Alternative models you can try:")
+                print("   - google/gemini-2.0-flash-001 (Gemini 2.0 Flash)")
+                print("   - google/gemini-2.5-flash-preview-05-20 (Newer version)")
+                return []
             else:
                 print(f"⚠️  OpenRouter API error: {response.status_code}")
+                if response.status_code == 401:
+                    print("💡 This means your API key is invalid or expired")
                 return []
                 
         except requests.RequestException as e:

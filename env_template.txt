@@ -1,0 +1,6 @@
+# Copy this file to .env and add your OpenRouter API key
+# Get your API key from: https://openrouter.ai/keys
+
+OPENROUTER_API_KEY=your-api-key-here
+
+# Example: OPENROUTER_API_KEY=sk-or-v1-abc123def456... 
