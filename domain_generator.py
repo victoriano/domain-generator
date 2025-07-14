@@ -7,7 +7,10 @@ import time
 import urllib.parse
 import subprocess
 import re
-from typing import List, Set
+import json
+import os
+from typing import List, Set, Optional
+import requests
 
 class DomainGenerator:
     def __init__(self):
@@ -47,6 +50,10 @@ class DomainGenerator:
                         'digital', 'web', 'ui', 'ux', 'experience', 'innovative', 'original']
         }
         self.custom_words = []
+        self.partial_words = []
+        self.compulsory_word = None
+        self.use_startup_endings = False
+        self.startup_endings = ['fy', 'ly', 'io', 'ai', 'app', 'hub', 'lab', 'co', 'go', 'do', 'up', 'kit', 'box', 'zen', 'wave', 'flow', 'spark', 'boost', 'shift', 'leap', 'rush', 'dash', 'zoom', 'sync', 'flex', 'edge', 'mint', 'glow', 'vibe', 'nova', 'pulse', 'peak', 'beam', 'bolt', 'wrap', 'flip', 'snap', 'drop', 'link', 'ping', 'buzz', 'loop', 'grid', 'lens', 'core', 'base', 'stack', 'trace', 'chain', 'nest', 'pod', 'dock', 'spot', 'node', 'cast', 'stream', 'cloud', 'deck', 'forge', 'space', 'ship', 'verse', 'scope', 'view', 'sense', 'mind', 'gear', 'tool', 'path', 'road', 'bridge', 'port', 'gate', 'door', 'star', 'moon', 'sun', 'sky', 'earth', 'sea', 'wind', 'fire', 'ice', 'stone', 'wood', 'steel', 'gold', 'silver', 'blue', 'red', 'green', 'black', 'white']
         
         self.connectors = ['', 'and', 'for', 'the', 'of', 'in', 'on', 'at', 'by', 'with']
         self.suffixes = ['ly', 'hub', 'lab', 'pro', 'max', 'ai', 'io', 'app', 'sys', 'net']
@@ -54,16 +61,37 @@ class DomainGenerator:
     def set_custom_words(self, words_input: str):
         self.custom_words = [word.strip().lower() for word in words_input.split(',') if word.strip()]
     
+    def set_partial_words(self, words_input: str):
+        self.partial_words = [word.strip().lower() for word in words_input.split(',') if word.strip()]
+    
+    def set_compulsory_word(self, word: str):
+        self.compulsory_word = word.strip().lower() if word.strip() else None
+    
+    def set_startup_endings(self, use_endings: bool):
+        self.use_startup_endings = use_endings
+    
     def get_word_list(self, categories: List[str]) -> List[str]:
         all_words = []
+        
+        # Add category words
         for category in categories:
             if category in self.base_words:
                 all_words.extend(self.base_words[category])
         
+        # Add custom words
         if self.custom_words:
             all_words.extend(self.custom_words)
         
+        # Add partial words
+        if self.partial_words:
+            all_words.extend(self.partial_words)
+        
         return list(set(all_words))
+    
+    def get_endings(self) -> List[str]:
+        if self.use_startup_endings:
+            return self.startup_endings
+        return self.suffixes
     
     def generate_combinations(self, categories: List[str], num_words: int, include_numbers: bool = False) -> List[str]:
         word_list = self.get_word_list(categories)
@@ -217,19 +245,105 @@ class DomainGenerator:
                 print("\n")
         
         return results
+    
+    def generate_ai_domains(self, context: str, num_domains: int = 20) -> List[str]:
+        """Generate domain names using AI via OpenRouter"""
+        
+        openrouter_key = os.getenv('OPENROUTER_API_KEY')
+        if not openrouter_key:
+            print("⚠️  OPENROUTER_API_KEY environment variable not set")
+            return []
+        
+        prompt = f"""Generate {num_domains} creative domain name ideas for: {context}
+
+Requirements:
+- Domain names should be memorable and brandable
+- Maximum 2-3 words combined
+- No hyphens or special characters
+- Suitable for .com domains
+- Mix of abstract and descriptive names
+- Consider modern startup naming trends
+
+Return only the domain names, one per line, without .com extension.
+
+Example format:
+optimizeflow
+dataspring
+insightforge
+analyticswave"""
+        
+        try:
+            response = requests.post(
+                "https://openrouter.ai/api/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {openrouter_key}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "model": "anthropic/claude-3-haiku",
+                    "messages": [
+                        {"role": "user", "content": prompt}
+                    ],
+                    "temperature": 0.8,
+                    "max_tokens": 500
+                },
+                timeout=30
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                content = result['choices'][0]['message']['content']
+                
+                # Parse domain names from response
+                domains = []
+                for line in content.split('\n'):
+                    line = line.strip()
+                    if line and not line.startswith('#') and not line.startswith('Example'):
+                        # Clean up the line
+                        domain = re.sub(r'[^a-zA-Z0-9]', '', line.lower())
+                        if domain and len(domain) > 2:
+                            domains.append(domain)
+                
+                return domains[:num_domains]
+            else:
+                print(f"⚠️  OpenRouter API error: {response.status_code}")
+                return []
+                
+        except requests.RequestException as e:
+            print(f"⚠️  Request failed: {e}")
+            return []
+        except Exception as e:
+            print(f"⚠️  AI generation error: {e}")
+            return []
 
 def main():
     generator = DomainGenerator()
     
-    print("🌐 Custom Domain Name Generator")
-    print("=" * 40)
+    print("🌐 Advanced Domain Name Generator")
+    print("=" * 45)
     
-    # Get user preferences for word types
-    print("\n📝 Tell us about your business/project:")
-    print("What type of words should compose your domain names?")
-    print("(e.g., 'technology and innovation', 'health and wellness', 'finance and investment')")
+    # AI Context Input
+    print("\n🤖 AI-Powered Domain Generation (Optional)")
+    print("Describe your business/project for AI-generated domain suggestions:")
+    ai_context = input("\n💭 Business context (press Enter to skip): ").strip()
     
-    user_description = input("\n💬 Describe your domain theme: ").strip()
+    ai_domains = []
+    if ai_context:
+        print("\n🔮 Generating AI domain suggestions...")
+        ai_domains = generator.generate_ai_domains(ai_context, 15)
+        if ai_domains:
+            print(f"✨ Generated {len(ai_domains)} AI suggestions")
+            print("\n🎯 AI-generated domains:")
+            for i, domain in enumerate(ai_domains[:5], 1):
+                print(f"  {i}. {domain}.com")
+            if len(ai_domains) > 5:
+                print(f"  ... and {len(ai_domains) - 5} more")
+        else:
+            print("⚠️  AI generation failed, continuing with manual generation")
+    
+    # Manual Generation Setup
+    print("\n📝 Manual Domain Generation Setup")
+    print("Configure your domain generation preferences:")
     
     # Show available categories
     print("\n📦 Available word categories:")
@@ -237,8 +351,8 @@ def main():
     for i, category in enumerate(categories, 1):
         print(f"  {i}. {category.title()}")
     
-    # Get category selection
-    category_input = input("\n🎯 Select categories (numbers separated by commas, e.g., 1,2,3): ").strip()
+    # Get category selection (now optional)
+    category_input = input("\n🎯 Select categories (numbers separated by commas, or press Enter to skip): ").strip()
     selected_categories = []
     
     if category_input:
@@ -246,19 +360,50 @@ def main():
             category_nums = [int(x.strip()) for x in category_input.split(',')]
             selected_categories = [categories[i-1] for i in category_nums if 1 <= i <= len(categories)]
         except ValueError:
-            selected_categories = ['tech', 'business']  # Default fallback
-    
-    if not selected_categories:
-        selected_categories = ['tech', 'business']  # Default fallback
+            pass
     
     # Get custom words
     custom_words = input("\n🔤 Add custom words (comma-separated, optional): ").strip()
     if custom_words:
         generator.set_custom_words(custom_words)
     
-    print(f"\n🎨 Selected categories: {', '.join(selected_categories)}")
+    # Get partial words
+    partial_words = input("\n🧩 Add partial words/stems (e.g., 'octo' from octopus, comma-separated): ").strip()
+    if partial_words:
+        generator.set_partial_words(partial_words)
+    
+    # Get compulsory word
+    compulsory_word = input("\n🎯 Compulsory word (must appear in all domains, optional): ").strip()
+    if compulsory_word:
+        generator.set_compulsory_word(compulsory_word)
+    
+    # Startup endings option
+    use_startup_endings = input("\n🚀 Use startup-style endings (fy, ly, io, etc.)? (y/n): ").lower().startswith('y')
+    generator.set_startup_endings(use_startup_endings)
+    
+    # Summary
+    print("\n📋 Generation Configuration:")
+    if selected_categories:
+        print(f"🎨 Categories: {', '.join(selected_categories)}")
+    else:
+        print("🎨 Categories: None (using custom words only)")
+    
     if generator.custom_words:
         print(f"🔤 Custom words: {', '.join(generator.custom_words)}")
+    
+    if generator.partial_words:
+        print(f"🧩 Partial words: {', '.join(generator.partial_words)}")
+    
+    if generator.compulsory_word:
+        print(f"🎯 Compulsory word: {generator.compulsory_word}")
+    
+    if generator.use_startup_endings:
+        print("🚀 Using startup-style endings")
+    
+    # Check if we have any words to work with
+    if not selected_categories and not generator.custom_words and not generator.partial_words:
+        print("\n⚠️  No word sources selected. Using default tech + business categories.")
+        selected_categories = ['tech', 'business']
     
     # Get other preferences
     print("\n📋 Generation settings:")
@@ -280,10 +425,24 @@ def main():
     print(f"\n🔧 Generating up to {max_domains} domains with {max_words} words...")
     
     # Generate domains
-    all_domains = generator.generate_combinations(selected_categories, max_words, include_numbers)
+    manual_domains = []
+    if selected_categories or generator.custom_words or generator.partial_words:
+        manual_domains = generator.generate_combinations(selected_categories, max_words, include_numbers)
+    
+    # Combine AI and manual domains
+    all_domains = list(set(ai_domains + manual_domains))
+    
+    if not all_domains:
+        print("\n⚠️  No domains generated. Please check your configuration.")
+        return
+    
     selected_domains = random.sample(all_domains, min(max_domains, len(all_domains)))
     
     print(f"✅ Generated {len(selected_domains)} unique domain combinations")
+    if ai_domains:
+        print(f"  🤖 AI-generated: {len([d for d in selected_domains if d in ai_domains])}")
+    if manual_domains:
+        print(f"  🔧 Manual combinations: {len([d for d in selected_domains if d in manual_domains])}")
     
     # Show some examples
     print(f"\n📝 Sample domains:")
@@ -310,7 +469,8 @@ def main():
             print(f"\n🎉 Available domains ({len(available_domains)}):")
             for result in available_domains[:20]:  # Show first 20
                 verification_icon = "🔍" if result['verification_method'] == 'DNS + WHOIS' else "📡"
-                print(f"  ✅ {result['full_domain']} {verification_icon}")
+                source_icon = "🤖" if result['domain'] in ai_domains else "🔧"
+                print(f"  ✅ {result['full_domain']} {verification_icon}{source_icon}")
                 print(f"     🔗 GoDaddy: {result['godaddy_url']}")
                 print(f"     📋 Verified with: {result['verification_method']}")
             
@@ -335,6 +495,15 @@ def main():
             print(f"  ... and {len(selected_domains) - 20} more")
     
     print(f"\n✨ Domain generation complete!")
+    print("\n🔍 Icons guide:")
+    print("  🔍 = WHOIS verified")
+    print("  📡 = DNS only")
+    print("  🤖 = AI generated")
+    print("  🔧 = Manual combination")
+    
+    if not ai_domains and ai_context:
+        print("\n💡 Tip: Set OPENROUTER_API_KEY environment variable for AI domain generation")
+        print("   Get your key at: https://openrouter.ai/keys")
 
 if __name__ == "__main__":
     main()
