@@ -362,8 +362,10 @@ def run_generation_cycle():
         generator.set_partial_words(partial_words)
     
     # Get compulsory word
-    compulsory_word = input("\n🎯 Compulsory word (must appear in all domains, optional): ").strip()
+    compulsory_word = input("\n🎯 Compulsory word (single word that must appear in all domains, optional): ").strip()
     if compulsory_word:
+        # Only take the first word if multiple were provided
+        compulsory_word = compulsory_word.split()[0] if ' ' in compulsory_word else compulsory_word.split(',')[0]
         generator.set_compulsory_word(compulsory_word)
     
     # Startup endings option
