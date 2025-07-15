@@ -6,12 +6,12 @@ An intelligent domain name generator that combines AI-powered suggestions with s
 
 - 🤖 **AI-Powered Generation**: Uses OpenRouter API with Gemini 2.5 Flash to generate contextual domain suggestions
 - 🔍 **Dual Verification**: DNS + WHOIS checking for accurate availability detection
-- 📊 **Smart Categorization**: Pre-built word categories for different industries
 - 🎯 **Custom Words**: Add your own words and partial stems
 - 🚀 **Startup-Style Endings**: Modern domain endings (ly, io, ai, etc.)
 - 🔗 **GoDaddy Integration**: Direct links to check and register domains
 - 📈 **Batch Processing**: Check multiple domains simultaneously
 - 🎨 **Beautiful CLI**: Intuitive command-line interface with progress indicators
+- 🔄 **Continuous Generation**: Keep generating new domains until you find the perfect one
 
 ## 🚀 Quick Start
 
@@ -61,15 +61,14 @@ Perfect for generating domains for:
 - **Health Tech**: "telemedicine platform for rural areas"
 - **FinTech**: "cryptocurrency trading dashboard"
 
-## 📊 Domain Categories
+## 🔄 Workflow Features
 
-- **Data & Analytics**: data, analytics, insights, metrics, intelligence
-- **Technology**: tech, software, app, cloud, AI, digital
-- **Business**: enterprise, solutions, consulting, strategy
-- **Health**: healthcare, wellness, medical, fitness
-- **Finance**: fintech, investment, trading, crypto
-- **Education**: learning, academy, training, courses
-- **Creative**: design, media, content, marketing
+- **Continuous Generation**: After each session, choose to generate more domains
+- **AI Context**: Describe your business for tailored domain suggestions
+- **Custom Words**: Add your specific keywords
+- **Partial Words**: Use word stems like 'octo', 'meta', 'zen'
+- **Compulsory Words**: Ensure specific terms appear in all domains
+- **Startup Endings**: Toggle modern suffixes (ly, io, ai, app, hub, etc.)
 
 ## 🔍 Verification Methods
 
@@ -92,7 +91,6 @@ Perfect for generating domains for:
 - **Compulsory Words**: Ensure specific terms appear in all domains
 - **Startup Endings**: Modern domain suffixes (ly, io, ai, etc.)
 - **Number Integration**: Include numbers in domain names
-- **Category Selection**: Choose from predefined word categories
 
 ## 🎨 Output Features
 

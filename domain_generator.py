@@ -21,41 +21,6 @@ except ImportError:
 
 class DomainGenerator:
     def __init__(self):
-        self.base_words = {
-            'data': ['data', 'analytics', 'insight', 'metrics', 'stats', 'info', 'intelligence',
-                    'knowledge', 'facts', 'records', 'database', 'warehouse', 'mart', 'lake',
-                    'stream', 'flow', 'pipeline', 'etl', 'transform', 'process', 'analyze',
-                    'compute', 'calculate', 'measure', 'track', 'monitor', 'observe', 'report',
-                    'dashboard', 'visual', 'chart', 'graph', 'trend', 'pattern', 'model',
-                    'algorithm', 'machine', 'learning', 'ai', 'neural', 'deep', 'smart',
-                    'intelligent', 'automated', 'digital', 'tech', 'cloud', 'big', 'fast',
-                    'real', 'time', 'instant', 'quick', 'rapid', 'speed', 'agile', 'lean',
-                    'efficient', 'optimal', 'max', 'super', 'ultra', 'mega', 'pro', 'plus',
-                    'hub', 'lab', 'works', 'studio', 'forge', 'craft', 'build', 'make',
-                    'create', 'generate', 'produce', 'deliver', 'serve', 'provide', 'offer',
-                    'solution', 'platform', 'system', 'framework', 'engine', 'core', 'base',
-                    'foundation', 'structure', 'architecture', 'design', 'plan', 'strategy'],
-            'tech': ['tech', 'technology', 'digital', 'software', 'code', 'dev', 'developer',
-                    'programming', 'app', 'application', 'web', 'mobile', 'cloud', 'saas',
-                    'api', 'system', 'platform', 'framework', 'tool', 'service', 'solution',
-                    'innovation', 'startup', 'venture', 'product', 'build', 'create', 'develop'],
-            'business': ['business', 'company', 'corp', 'enterprise', 'venture', 'startup',
-                        'solutions', 'services', 'consulting', 'strategy', 'growth', 'success',
-                        'profit', 'revenue', 'sales', 'market', 'brand', 'professional', 'expert',
-                        'leader', 'management', 'executive', 'global', 'international', 'premium'],
-            'health': ['health', 'medical', 'healthcare', 'wellness', 'fitness', 'care', 'clinic',
-                      'hospital', 'doctor', 'patient', 'treatment', 'therapy', 'medicine', 'pharma',
-                      'biotech', 'life', 'living', 'healthy', 'vital', 'strong', 'active', 'energy'],
-            'finance': ['finance', 'financial', 'money', 'invest', 'investment', 'capital', 'fund',
-                       'wealth', 'rich', 'profit', 'revenue', 'banking', 'credit', 'loan', 'payment',
-                       'crypto', 'blockchain', 'trading', 'market', 'stock', 'portfolio', 'asset'],
-            'education': ['education', 'learning', 'school', 'university', 'college', 'course',
-                         'training', 'teach', 'student', 'knowledge', 'skill', 'academy', 'institute',
-                         'study', 'research', 'science', 'academic', 'scholar', 'expert', 'master'],
-            'creative': ['creative', 'design', 'art', 'artist', 'studio', 'agency', 'media',
-                        'content', 'brand', 'marketing', 'advertising', 'visual', 'graphic',
-                        'digital', 'web', 'ui', 'ux', 'experience', 'innovative', 'original']
-        }
         self.custom_words = []
         self.partial_words = []
         self.compulsory_word = None
@@ -77,13 +42,8 @@ class DomainGenerator:
     def set_startup_endings(self, use_endings: bool):
         self.use_startup_endings = use_endings
     
-    def get_word_list(self, categories: List[str]) -> List[str]:
+    def get_word_list(self) -> List[str]:
         all_words = []
-        
-        # Add category words
-        for category in categories:
-            if category in self.base_words:
-                all_words.extend(self.base_words[category])
         
         # Add custom words
         if self.custom_words:
@@ -100,31 +60,47 @@ class DomainGenerator:
             return self.startup_endings
         return self.suffixes
     
-    def generate_combinations(self, categories: List[str], num_words: int, include_numbers: bool = False) -> List[str]:
-        word_list = self.get_word_list(categories)
+    def generate_combinations(self, num_words: int, include_numbers: bool = False) -> List[str]:
+        word_list = self.get_word_list()
+        
+        if not word_list:
+            return []
+            
         domains = set()
         
-        # Two-word combinations
-        if num_words >= 2:
-            for word1, word2 in itertools.combinations(word_list, 2):
-                domains.add(f"{word1}{word2}")
-                
-        # Three-word combinations with connectors
-        if num_words >= 3:
-            sample_words = random.sample(word_list, min(20, len(word_list)))
-            for word1, connector, word2 in itertools.product(
-                sample_words, self.connectors[:3], sample_words
-            ):
-                if word1 != word2:
-                    if connector:
-                        domains.add(f"{word1}{connector}{word2}")
-                    else:
-                        domains.add(f"{word1}{word2}")
+        # If compulsory word is set, ensure it's in all combinations
+        if self.compulsory_word:
+            # Combinations with compulsory word
+            for word in word_list:
+                if word != self.compulsory_word:
+                    domains.add(f"{self.compulsory_word}{word}")
+                    domains.add(f"{word}{self.compulsory_word}")
+            
+            # Add with endings
+            for ending in self.get_endings():
+                domains.add(f"{self.compulsory_word}{ending}")
+        else:
+            # Two-word combinations
+            if num_words >= 2 and len(word_list) >= 2:
+                for word1, word2 in itertools.combinations(word_list, 2):
+                    domains.add(f"{word1}{word2}")
+                    
+            # Three-word combinations with connectors
+            if num_words >= 3 and len(word_list) >= 2:
+                sample_words = random.sample(word_list, min(20, len(word_list)))
+                for word1, connector, word2 in itertools.product(
+                    sample_words, self.connectors[:3], sample_words
+                ):
+                    if word1 != word2:
+                        if connector:
+                            domains.add(f"{word1}{connector}{word2}")
+                        else:
+                            domains.add(f"{word1}{word2}")
         
         # Add suffixes
         base_words = random.sample(word_list, min(10, len(word_list)))
         for word in base_words:
-            for suffix in self.suffixes:
+            for suffix in self.get_endings():
                 domains.add(f"{word}{suffix}")
         
         # Add numbers if requested
@@ -345,10 +321,11 @@ analyticswave"""
             print(f"⚠️  AI generation error: {e}")
             return []
 
-def main():
+def run_generation_cycle():
+    """Run a single cycle of domain generation"""
     generator = DomainGenerator()
     
-    print("🌐 Advanced Domain Name Generator")
+    print("\n🌐 Advanced Domain Name Generator")
     print("=" * 45)
     
     # AI Context Input
@@ -374,23 +351,6 @@ def main():
     print("\n📝 Manual Domain Generation Setup")
     print("Configure your domain generation preferences:")
     
-    # Show available categories
-    print("\n📦 Available word categories:")
-    categories = list(generator.base_words.keys())
-    for i, category in enumerate(categories, 1):
-        print(f"  {i}. {category.title()}")
-    
-    # Get category selection (now optional)
-    category_input = input("\n🎯 Select categories (numbers separated by commas, or press Enter to skip): ").strip()
-    selected_categories = []
-    
-    if category_input:
-        try:
-            category_nums = [int(x.strip()) for x in category_input.split(',')]
-            selected_categories = [categories[i-1] for i in category_nums if 1 <= i <= len(categories)]
-        except ValueError:
-            pass
-    
     # Get custom words
     custom_words = input("\n🔤 Add custom words (comma-separated, optional): ").strip()
     if custom_words:
@@ -412,10 +372,6 @@ def main():
     
     # Summary
     print("\n📋 Generation Configuration:")
-    if selected_categories:
-        print(f"🎨 Categories: {', '.join(selected_categories)}")
-    else:
-        print("🎨 Categories: None (using custom words only)")
     
     if generator.custom_words:
         print(f"🔤 Custom words: {', '.join(generator.custom_words)}")
@@ -430,9 +386,11 @@ def main():
         print("🚀 Using startup-style endings")
     
     # Check if we have any words to work with
-    if not selected_categories and not generator.custom_words and not generator.partial_words:
-        print("\n⚠️  No word sources selected. Using default tech + business categories.")
-        selected_categories = ['tech', 'business']
+    if not generator.custom_words and not generator.partial_words and not ai_domains:
+        print("\n⚠️  No word sources provided. Please provide either:")
+        print("   - AI context for automatic generation")
+        print("   - Custom words or partial words for manual generation")
+        return
     
     # Get other preferences
     print("\n📋 Generation settings:")
@@ -455,8 +413,8 @@ def main():
     
     # Generate domains
     manual_domains = []
-    if selected_categories or generator.custom_words or generator.partial_words:
-        manual_domains = generator.generate_combinations(selected_categories, max_words, include_numbers)
+    if generator.custom_words or generator.partial_words:
+        manual_domains = generator.generate_combinations(max_words, include_numbers)
     
     # Combine AI and manual domains
     all_domains = list(set(ai_domains + manual_domains))
@@ -533,6 +491,23 @@ def main():
     if not ai_domains and ai_context:
         print("\n💡 Tip: Set OPENROUTER_API_KEY environment variable for AI domain generation")
         print("   Get your key at: https://openrouter.ai/keys")
+
+def main():
+    """Main function with restart loop"""
+    while True:
+        run_generation_cycle()
+        
+        # Ask if user wants to start over
+        print("\n" + "=" * 45)
+        restart = input("\n🔄 Would you like to generate more domains? (y/n): ").lower().strip()
+        
+        if not restart.startswith('y'):
+            print("\n👋 Thank you for using Domain Generator!")
+            print("🌟 Good luck with your new domain!")
+            break
+        
+        print("\n" + "=" * 45)
+        print("🚀 Starting new domain generation session...")
 
 if __name__ == "__main__":
     main()
